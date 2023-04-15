@@ -19,6 +19,7 @@ def main():
         metavar='MODEL_FILE', help='model file to serve', nargs='?', default=None)
     parser.add_argument('-b', '--browse', help='launch web browser', action='store_true')
     parser.add_argument('-p', '--port', help='port to serve', type=int)
+    parser.add_argument('-s', '--skip-large-tensors', help='skip loading large tensors', action='store_true')
     parser.add_argument('--host', metavar='ADDR', help='host to serve', default='localhost')
     parser.add_argument('--verbosity',
         metavar='LEVEL', help='output verbosity (quiet, default, debug)',
@@ -32,7 +33,7 @@ def main():
         print(__version__)
         sys.exit(0)
     address = (args.host, args.port) if args.host else args.port if args.port else None
-    start(args.file, address=address, browse=args.browse, verbosity=args.verbosity)
+    start(args.file, address=address, browse=args.browse, verbosity=args.verbosity, skip_large_tensors=args.skip_large_tensors)
     wait()
     sys.exit(0)
 

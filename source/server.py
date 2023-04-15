@@ -260,7 +260,7 @@ def wait():
         _log(True, '\n')
         stop()
 
-def serve(file, data, address=None, browse=False, verbosity=1):
+def serve(file, data, address=None, browse=False, verbosity=1, skip_large_tensors=False):
     '''Start serving model from file or data buffer at address and open in web browser.
 
     Args:
@@ -274,6 +274,20 @@ def serve(file, data, address=None, browse=False, verbosity=1):
         A (host, port) address tuple.
     '''
     verbosity = { '0': 0, 'quiet': 0, '1': 1, 'default': 1, '2': 2, 'debug': 2 }[str(verbosity)]
+
+    if skip_large_tensors and (file and not data) and file.endswith('.onnx'):
+        import shutil
+        import tempfile
+        import onnx
+        tmpfile = tempfile.mktemp(".onnx")
+        model = onnx.load(file)
+        for initializer in model.graph.initializer:
+            if len(initializer.raw_data) > 1024:
+                initializer.ClearField('raw_data')
+        model = onnx.shape_inference.infer_shapes(model)
+        onnx.save(model, tmpfile)
+        print("Removed large tensors from", file, "and saved to", tmpfile)
+        file = tmpfile
 
     if not data and file and not os.path.exists(file):
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), file)
@@ -304,7 +318,7 @@ def serve(file, data, address=None, browse=False, verbosity=1):
 
     return address
 
-def start(file=None, address=None, browse=True, verbosity=1):
+def start(file=None, address=None, browse=True, verbosity=1, skip_large_tensors=False):
     '''Start serving model file at address and open in web browser.
 
     Args:
@@ -316,4 +330,4 @@ def start(file=None, address=None, browse=True, verbosity=1):
     Returns:
         A (host, port) address tuple.
     '''
-    return serve(file, None, browse=browse, address=address, verbosity=verbosity)
+    return serve(file, None, browse=browse, address=address, verbosity=verbosity, skip_large_tensors=skip_large_tensors)
